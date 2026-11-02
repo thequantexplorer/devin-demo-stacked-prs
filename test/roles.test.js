@@ -153,5 +153,50 @@ test('AC7: only admins can DELETE /api/projects/:id; members and viewers get 403
   assert.equal((await app.request('GET', '/api/projects', { as: ADA })).json.length, 2);
 });
 
-test.todo('AC8: the Team page shows a role badge for every user, and admins get a role picker');
-test.todo('AC9: the Projects page hides New project from viewers and Delete from non-admins');
+const count = (text, re) => (text.match(re) || []).length;
+
+test('AC8: the Team page shows a role badge for every user, and admins get a role picker', async (t) => {
+  const app = await freshApp(t);
+
+  for (const as of [ADA, GRACE, LINUS]) {
+    const { text } = await app.request('GET', '/team', { as });
+    for (const [id, role] of [[ADA, 'admin'], [GRACE, 'member'], [LINUS, 'viewer']]) {
+      const row = new RegExp(`<tr data-user-id="${id}">[\\s\\S]*?class="role-badge role-${role}" data-role="${role}">${role}</span>[\\s\\S]*?</tr>`);
+      assert.match(text, row, `user ${id} has a ${role} badge when viewed by user ${as}`);
+    }
+    assert.equal(count(text, /class="role-badge /g), 3);
+  }
+
+  const admin = (await app.request('GET', '/team', { as: ADA })).text;
+  assert.equal(count(admin, /<select data-action="change-role"/g), 3);
+  for (const [id, role] of [[ADA, 'admin'], [GRACE, 'member'], [LINUS, 'viewer']]) {
+    const picker = new RegExp(`<select data-action="change-role" data-id="${id}"[\\s\\S]*?</select>`).exec(admin)[0];
+    assert.match(picker, new RegExp(`<option value="${role}" selected>`), `user ${id}'s picker starts on ${role}`);
+    assert.equal(count(picker, /<option /g), 3);
+  }
+
+  for (const as of [GRACE, LINUS]) {
+    assert.doesNotMatch((await app.request('GET', '/team', { as })).text, /data-action="change-role"/);
+  }
+});
+
+test('AC9: the Projects page hides New project from viewers and Delete from non-admins', async (t) => {
+  const app = await freshApp(t);
+  const page = async (as) => (await app.request('GET', '/', { as })).text;
+
+  const admin = await page(ADA);
+  assert.match(admin, /id="new-project"/);
+  assert.equal(count(admin, /data-action="delete-project"/g), 3);
+
+  const member = await page(GRACE);
+  assert.match(member, /id="new-project"/);
+  assert.equal(count(member, /data-action="delete-project"/g), 0);
+
+  const viewer = await page(LINUS);
+  assert.doesNotMatch(viewer, /id="new-project"/);
+  assert.equal(count(viewer, /data-action="delete-project"/g), 0);
+
+  for (const text of [member, viewer]) {
+    for (const name of ['Website redesign', 'Billing v2', 'Mobile app']) assert.match(text, new RegExp(name));
+  }
+});

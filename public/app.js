@@ -23,3 +23,11 @@ document.addEventListener('click', async (e) => {
   if (!btn) return;
   if (await api('DELETE', `/api/projects/${btn.dataset.id}`)) location.reload();
 });
+
+document.addEventListener('change', async (e) => {
+  const picker = e.target.closest('[data-action="change-role"]');
+  if (!picker) return;
+  picker.disabled = true;
+  await api('PATCH', `/api/users/${picker.dataset.id}/role`, { role: picker.value });
+  location.reload();
+});
