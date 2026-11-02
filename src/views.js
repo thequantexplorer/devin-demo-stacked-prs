@@ -1,3 +1,5 @@
+const { ROLES } = require('./users');
+
 const escape = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -24,23 +26,41 @@ ${body}
 </html>`;
 }
 
+// These only hide controls the user cannot use. The API enforces the same rules.
+const canCreateProjects = (user) => user.role === 'admin' || user.role === 'member';
+const canDeleteProjects = (user) => user.role === 'admin';
+const canChangeRoles = (user) => user.role === 'admin';
+
+function roleBadge(role) {
+  return `<span class="role-badge role-${escape(role)}" data-role="${escape(role)}">${escape(role)}</span>`;
+}
+
+function rolePicker(u) {
+  const options = ROLES.map((r) => `<option value="${r}"${r === u.role ? ' selected' : ''}>${r}</option>`).join('');
+  return `<select data-action="change-role" data-id="${u.id}" aria-label="Role for ${escape(u.name)}">${options}</select>`;
+}
+
 function projectsPage(user, projects) {
+  const deleteButton = (p) =>
+    canDeleteProjects(user) ? `\n        <button data-action="delete-project" data-id="${p.id}">Delete</button>` : '';
   const rows = projects
     .map(
       (p) => `      <li data-project-id="${p.id}">
-        <span>${escape(p.name)}</span> <small>${escape(p.ownerName)}</small>
-        <button data-action="delete-project" data-id="${p.id}">Delete</button>
+        <span>${escape(p.name)}</span> <small>${escape(p.ownerName)}</small>${deleteButton(p)}
       </li>`
     )
     .join('\n');
-  return layout(
-    user,
-    'Projects',
-    `    <form id="new-project">
+  const newProjectForm = canCreateProjects(user)
+    ? `    <form id="new-project">
       <input name="name" placeholder="Project name" required>
       <button type="submit">New project</button>
     </form>
-    <ul class="projects">
+`
+    : '';
+  return layout(
+    user,
+    'Projects',
+    `${newProjectForm}    <ul class="projects">
 ${rows}
     </ul>`
   );
@@ -52,6 +72,7 @@ function teamPage(user, users) {
       (u) => `      <tr data-user-id="${u.id}">
         <td>${escape(u.name)}</td>
         <td>${escape(u.email)}</td>
+        <td>${roleBadge(u.role)}${canChangeRoles(user) ? ` ${rolePicker(u)}` : ''}</td>
       </tr>`
     )
     .join('\n');
@@ -59,7 +80,7 @@ function teamPage(user, users) {
     user,
     'Team',
     `    <table class="team">
-      <thead><tr><th>Name</th><th>Email</th></tr></thead>
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>
       <tbody>
 ${rows}
       </tbody>
