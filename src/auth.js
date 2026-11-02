@@ -22,4 +22,12 @@ function requireUser(req, res, next) {
   next();
 }
 
-module.exports = { currentUser, requireUser };
+// Responds 403 unless the signed-in user has one of the given roles. Use after requireUser.
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'forbidden' });
+    next();
+  };
+}
+
+module.exports = { currentUser, requireUser, requireRole };
