@@ -14,7 +14,7 @@ test('API', async (t) => {
   await t.test('GET /api/me returns the current user', async () => {
     const res = await app.request('GET', '/api/me', { as: 2 });
     assert.equal(res.status, 200);
-    assert.deepEqual(res.json, { id: 2, email: 'grace@acme.test', name: 'Grace Hopper' });
+    assert.deepEqual(res.json, { id: 2, email: 'grace@acme.test', name: 'Grace Hopper', role: 'member' });
   });
 
   await t.test('GET /api/users lists the team', async () => {
@@ -24,10 +24,10 @@ test('API', async (t) => {
   });
 
   await t.test('POST /api/projects creates a project owned by the caller', async () => {
-    const res = await app.request('POST', '/api/projects', { as: 3, body: { name: 'Kernel docs' } });
+    const res = await app.request('POST', '/api/projects', { as: 2, body: { name: 'Kernel docs' } });
     assert.equal(res.status, 201);
     assert.equal(res.json.name, 'Kernel docs');
-    assert.equal(res.json.ownerId, 3);
+    assert.equal(res.json.ownerId, 2);
   });
 
   await t.test('POST /api/projects validates the name', async () => {
