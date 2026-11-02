@@ -1,0 +1,17 @@
+name: ci
+# No branch filter on pull_request, so CI also runs on stacked PRs whose base is another PR's branch.
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
