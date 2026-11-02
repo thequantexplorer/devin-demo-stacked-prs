@@ -20,12 +20,12 @@ function migrate(db) {
 
 function seed(db) {
   if (db.prepare('SELECT COUNT(*) FROM users').pluck().get() > 0) return;
-  const addUser = db.prepare('INSERT INTO users (id, email, name) VALUES (?, ?, ?)');
+  const addUser = db.prepare('INSERT INTO users (id, email, name, role) VALUES (?, ?, ?, ?)');
   const addProject = db.prepare('INSERT INTO projects (id, name, owner_id) VALUES (?, ?, ?)');
   db.transaction(() => {
-    addUser.run(1, 'ada@acme.test', 'Ada Lovelace');
-    addUser.run(2, 'grace@acme.test', 'Grace Hopper');
-    addUser.run(3, 'linus@acme.test', 'Linus Torvalds');
+    addUser.run(1, 'ada@acme.test', 'Ada Lovelace', 'admin');
+    addUser.run(2, 'grace@acme.test', 'Grace Hopper', 'member');
+    addUser.run(3, 'linus@acme.test', 'Linus Torvalds', 'viewer');
     addProject.run(1, 'Website redesign', 1);
     addProject.run(2, 'Billing v2', 2);
     addProject.run(3, 'Mobile app', 2);
